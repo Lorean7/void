@@ -1,0 +1,263 @@
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity >=0.7.0 <0.9.0;
+pragma experimental ABIEncoderV2;
+
+contract Trans
+{
+
+    modifier onlyAdmin(){
+    require (users[msg.sender].admin == true,"you don't admin");
+    _;
+    }
+
+    function getHash (string memory data) public pure returns (bytes32)
+    {
+
+        return (keccak256(abi.encodePacked(data)));
+    }
+
+    struct User
+    {
+    string login;
+    bytes32 password;
+    bool admin;
+    }
+mapping (address =>User) public users; 
+mapping (string => address) public addresses;
+address[] public userList; 
+uint adminAmount;
+
+constructor ()
+{
+    //adm
+users[]= User("1",getHash("123"),true);
+users[]= User("2",getHash("123"),true);
+adminAmount =2;
+//users
+users[]= User("3",getHash("123"),false);
+users[]= User("4",getHash("123"),false);
+users[]= User("5",getHash("123"),false);
+users[]= User("6",getHash("123"),false);
+//------------------------------------
+//поиск адреса по его логину(мапинг)
+addresses[users[].login] = ;
+addresses[users[].login] = ;
+addresses[users[].login] = ;
+addresses[users[].login] = ;
+addresses[users[].login] = ;
+addresses[users[].login] = ;
+//Сохраняем наши адреса(составялем список)
+userList.push();
+userList.push();
+userList.push();
+userList.push();
+userList.push();
+userList.push();
+//--------------------------------------------------------
+
+templates["Present 10"] =Template(0,(10*(10**18)));
+templates["Present 30"] =Template(0,(30*(10**18)));
+templates["Present 50"] =Template(0,(50*(10**18)));
+
+
+nameTemplates = ["Present 10","Present 30","Present 50"];
+
+nameCategories = ["Personal Trans","Payment of rental housing", "Personal settlements"];
+ 
+}
+
+//- Создание аккаунта
+function createUser (string memory login, string memory pass) public 
+{
+require (users[msg.sender].password == 0, "user already exist");
+require (addresses[login] == 0x0000000000000000000000000000000000000000,"user exist");
+users[msg.sender] = User(login,getHash(pass),false);
+userList.push(msg.sender);
+}
+
+//вернуть список  аккаунтов
+function viewListUser () view public returns(address[] memory)
+{
+return(userList);
+}
+//Получение баланса пользователя
+function getBalanceUser (address adr) view public returns(uint)
+{
+    return(adr.balance);
+}
+//Перевод (создание,отмена, принятие)
+struct Transfer
+{
+address adrFrom;
+address adrTo;
+uint category;
+uint value;
+bytes32 codeWord;
+string description;
+uint time;
+bool finished;
+
+}
+Transfer[] public transfers;
+
+function createTransfer (address adrTo,uint categoryId, string memory sayCodeWord,string memory description) public payable
+{
+require (msg.value <= getBalanceUser(msg.sender) && msg.value > 0, "not enough money or invalid value");
+require (adrTo != 0x0000000000000000000000000000000000000000 && adrTo != msg.sender, "invalid address");
+require (categoryId <= nameCategories.length-1,"invalid id category");
+transfers.push(Transfer(msg.sender,adrTo,categoryId,msg.value,getHash(sayCodeWord),description,0,false));
+}
+
+function getTransId() view public returns(uint)
+{
+    return (transfers.length - 1);
+}
+
+//Принятие транзакции
+
+function acceptTrans (uint idTrans,string memory sayCodeWord) public payable 
+{
+require (msg.sender == transfers[idTrans].adrTo,"not for you");
+require (transfers[idTrans].finished == false, "trans end");
+    if (getHash(sayCodeWord)==transfers[idTrans].codeWord) // сравнваем кодовое слово из транзакции и введенное получателем
+    {
+        payable(msg.sender).transfer(transfers[idTrans].value);// кто получает и что получает 
+    
+    }else
+    {
+        payable(transfers[idTrans].adrFrom).transfer(transfers[idTrans].value); // возвращение денег отправителю 
+    }
+transfers[idTrans].time = block.timestamp;
+transfers[idTrans].finished = true;
+}
+
+function cancelTrans (uint idTrans) public payable
+{
+    require (msg.sender == transfers[idTrans].adrFrom, "u didn't create");
+    require (transfers[idTrans].finished == false, "trans end");
+    payable (msg.sender).transfer(transfers[idTrans].value);
+transfers[idTrans].time = block.timestamp;
+transfers[idTrans].finished = true;
+}
+
+
+
+//------------------Шаблон и категории 
+
+struct Template 
+{
+    uint category;
+    uint money;
+
+}
+mapping(string =>Template) public templates;
+string[] public nameCategories;
+string[] public nameTemplates;
+
+//Создание шаблона
+function createTemplate (string memory nameTempl,uint categoryId,uint value ) public 
+{
+    require (categoryId <= nameCategories.length-1,"invalid id category");
+    templates[nameTempl] = Template(categoryId,(value*(10*18)));
+
+}
+//Создание категории
+function createCategories (string memory nameCategory) public
+{
+nameCategories.push(nameCategory);  
+}
+//Просмотр всех имен шаблонов
+function viewAllTemplate () public view returns (string[] memory)
+{
+return (nameTemplates);
+}
+//Просмотр всех имен категорий
+function viewAllCategory () public view returns (string[] memory)
+{
+return (nameCategories);
+}
+
+//Получение значение д/с из шаблона 
+function getBalanceTemplate (string memory  nameTempl) public view returns (uint )
+{
+    return (templates[nameTempl].money);
+}
+//------------------------------Повышение пользователя
+//структура повышения
+struct upUser
+{
+address adrUp;
+address [] voteProc;
+address voteCons;
+bool finished;
+}
+    mapping (uint => upUser) public listOffer;
+    uint voteCount = 0;
+
+//Модификатор проверка голоса
+modifier checkVote (uint voteId)
+{
+    bool vote = false; // не проголосовал
+    for (uint i =0; i <listOffer[voteId].voteProc.length;i++  ) // переменная обращение по мапингу и увеличение инк на 1
+    {
+        if (msg.sender == listOffer[voteId].voteProc[i]) //м сендор равен одному из наших адресов то 
+        {
+            vote = true; //выход а если нет идет рекваер
+            break;
+        }
+        require (vote == false,"sry, you voted"); // проверка что голосование отменилось
+        _;
+    }
+}
+//Создание голосования
+function createVote (address adrUp) public  onlyAdmin
+{
+    require(users[adrUp].admin == false, "user admin");
+    address[] memory voidArray;
+    listOffer[voteCount] = upUser(adrUp,voidArray,address(0),false);
+    listOffer[voteCount].voteProc.push(msg.sender);
+    voteCount +=1;
+
+}
+//геттер для  статуса голосования 
+function getStatusVote (uint idVote) public view onlyAdmin returns(bool)
+{
+ bool check = listOffer[idVote].finished;
+ return(check);
+}
+
+//голос за
+function voteProc (uint idVote) public onlyAdmin checkVote(idVote)
+{
+    require(listOffer[idVote].finished == false,"voted end");
+ listOffer[voteCount].voteProc.push(msg.sender);
+    if(listOffer[voteCount].voteProc.length == adminAmount)
+    {
+        users[listOffer[voteCount].adrUp].admin = true;
+        listOffer[idVote].finished = true;
+
+    }
+}
+//голос против 
+function voteCons (uint idVote) public onlyAdmin checkVote(idVote)
+{
+    require(listOffer[idVote].finished == false,"voted end");
+    listOffer[voteCount].voteCons = msg.sender;
+        listOffer[idVote].finished = true;
+}
+
+//получить список голосов конкретного голосования(за)
+    function getVoteListProc (uint idVote) public view returns (address []memory )
+    {
+        return(listOffer[idVote].voteProc);
+    }
+
+    //получить список голосов конкретного голосования(против)
+    function getVoteListCons (uint idVote) public view returns (address  )
+    {
+        return(listOffer[idVote].voteCons);
+    }
+
+
+}
