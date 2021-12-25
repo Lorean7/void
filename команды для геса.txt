@@ -1,0 +1,6 @@
+1)geth --datadir C:\Geth account new
+2)geth --datadir C:\Geth init C:\Geth\genessis.json
+3) запускаем файл run.bat
+4)запускаем файл attach.bat и в нем ЗДЕСЬ в файле attach  пишем две команды:
+          -personal.unlockAccount(eth.accounts[0],"",0)
+         - miner.start(1)
